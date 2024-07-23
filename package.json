@@ -1,0 +1,19 @@
+{
+  "name": "waiter",
+  "version": "1.0.0",
+  "description": "Helpers for managing multi-tenant database using libsql client. ",
+  "main": "index.js",
+  "scripts": {
+    "example": "node examples/sqlite_local.js",
+    "clean": "rm db/test.db",
+    "example-clean": "npm run example && npm run clean",
+    "repkg": "sudo rm -r node_modules/ && npm install --save"
+    
+  },
+  "keywords": [],
+  "author": "Andrew Bloese",
+  "license": "ISC",
+  "dependencies": {
+    "@libsql/client": "^0.7.0"
+  }
+}
