@@ -209,9 +209,6 @@ class Tenant {
             return { error }
         }
     }
-
-
-
 }
 
 
