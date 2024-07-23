@@ -5,10 +5,10 @@ Multi-tenant database management for local or remote sqlite databases (using lib
 
 ## Scripts
 
-`npm run example` - runs the example script without cleanup
-`npm run clean` - removes the generated example db 
-`example-clean` - runs the example script and cleans up afterwards
-`repkg` - removes and reinstalls all node_modules
+-  `npm run example` - runs the example script without cleanup
+- `npm run clean` - removes the generated example db 
+- `example-clean` - runs the example script and cleans up afterwards
+- `repkg` - removes and reinstalls all node_modules
 **** 
 ## Features
 * Define schemas with column names, type, and constraints
