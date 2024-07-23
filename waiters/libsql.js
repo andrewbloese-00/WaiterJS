@@ -9,6 +9,10 @@ const { createClient } = require("@libsql/client");
  */
 
 /**
+ * @typedef {'='|'!='|'<'|'>'|'<='|'>='} libsqlWhereOperator
+ */
+
+/**
  * Describes a sqlite constraint; INDEX, FOREIGN KEY, DEFAULT, AND CHECK expect arguments as sql strings
  * @typedef {[libsqlConstraint,...any]} libsqlConstraintTuple
  */
@@ -141,6 +145,72 @@ class Tenant {
 
     }
 
+    /**
+     * 
+     * @param {string} col 
+     * @param {libsqlWhereOperator} op 
+     * @param {any} value 
+     * @returns 
+     */
+    where(col,op,value){
+        return new Where(this._schema, col,op,value)
+    }
+
+    query(sql,args){
+        try {
+            
+        } catch (error) {
+            
+        }
+    }
+
+
+    /**
+     * 
+     * @param {{[column:string]: any}} properties 
+     * @param {Where} where 
+     */
+    async update(properties,where){
+        const updates = [];
+        const args = [];
+        for(const property in properties){
+            //if valid property and not primary key then add to updates
+            if(property in this._schema && !this._schema[property].constraints.some(([cons])=> cons === "PRIMARY KEY")){
+                updates.push(`${property} = ?`)
+                args.push(properties[property])
+            }
+        }
+        const updateSql = updates.join(",")
+        args.push(...where.args)
+    
+        try {
+            const sql = `UPDATE ${this.tableName} SET ${updateSql} WHERE ${where.sql} RETURNING *` 
+            console.log("SQL :> ", {sql,args})
+            const result = await this.client.execute({sql,args})
+            return { data: result.rows, nAffected: result.rows.length}
+        } catch (error) {
+            console.error("[Tenant.update] Failed to run update...\nError: ", error)
+            return {error}
+        }
+
+    }
+
+    /**
+     * @param {Where} where 
+     */
+    async delete(where){
+        try {
+            const sql = `DELETE FROM ${this.tableName} WHERE ${where.sql}`
+            const {rowsAffected}= await this.client.execute({sql, args: where.args})
+
+            return { data: `Successfully deleted ${rowsAffected} ${rowsAffected == 1 ? "row" : 'rows'} from ${this.tableName}!`, nAffected:rowsAffected}
+        } catch (error) {
+            console.error("[Tenant.delete] Failed to delete...\nError: ", error)
+            return { error }
+        }
+    }
+
+
 
 }
 
@@ -235,9 +305,16 @@ function Waiter(client,tableName,schema){
 
 
 const getLocalClient = pathToFile => { 
-    return createClient({
-        url: `file:${pathToFile}`
-    })
+    try {
+        const c = createClient({
+            url: `file:${pathToFile}`
+        })
+        return c
+        
+    } catch (error) {
+        console.error("[getLocalClient] Could not get local client...\nError: ", error)
+        process.exit(1);
+    }
 }
 
 const getRemoteClient = (url, authToken) => {
@@ -250,9 +327,56 @@ const getRemoteClient = (url, authToken) => {
     }
 }
 
+class Where { 
+    /**
+     * 
+     * @param {WaiterSchema} _schema 
+     * @param {string} column 
+     * @param {libsqlWhereOperator} op 
+     * @param {*} val 
+     */
+    constructor(_schema,column, op,val){
+        this._schema = _schema
+        this.sql = `${column} ${op} ?`
+        this.args = [ val]
+    }
 
-const libsqlAdapter = { Waiter , getLocalClient, Tenant}
+    /**
+     * 
+     * @param {string} column 
+     * @param {libsqlWhereOperator} op 
+     * @param {*} val 
+     * @returns 
+     */
+    AND(column,op,val){
+        const statement = new Where(this._schema, column,op,val)
+        this.sql = [`(${this.sql})`, `(${statement.sql})`].join(" AND ")
+        this.args.push(...statement.args)
+        return this
+    }
+
+    /**
+     * @param {string} column 
+     * @param {libsqlWhereOperator} op 
+     * @param {*} val 
+     * @returns 
+     */
+    OR(column,op,val){
+        const statement = new Where(this._schema, column, op, val);
+        this.sql = [`(${this.sql})`, `(${statement.sql})`].join(" OR ");
+        this.args.push(...statement.args)
+        return this
+    }
 
 
-module.exports =  libsqlAdapter
+}
+
+
+
+module.exports =  { Waiter , getLocalClient, getRemoteClient, Tenant, Where}
+
+
+
+
+
 

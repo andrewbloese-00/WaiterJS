@@ -118,6 +118,16 @@ async function main(){
     const usersA = await Tenants['a'].Users.get();
     console.log('== All Products A ==\n',productsA);
     console.log('== All Users A ==\n',usersA);
+
+    console.log("== Update Users_a ==")
+    const where = Tenants['a'].Users.where("id","=",1).AND("username","=","Hugh Janus").OR("username",'=',null)
+    const usersAUpdate = await Tenants['a'].Users.update({username: "Joe Mama"}, where)
+    console.log(usersAUpdate)
+
+    console.log('== DELETE From Products_a ==')
+    const pA = Tenants['a'].Products
+    const productsADelete = await pA.delete(pA.where("id","=",1))
+    console.log(productsADelete)
     
 }
 
